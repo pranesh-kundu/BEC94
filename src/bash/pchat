@@ -1,0 +1,36 @@
+#!/bin/bash
+DATAROOT=$(readlink -f $(dirname $0)/../..)
+CHATFILE=$(readlink -f $(find . ${DATAROOT}/ -name _chat.txt))
+OUTFILE=$(readlink -f ${DATAROOT}/output/outfile.txt)
+
+
+function findspeaker() {
+    string="$1"
+    name=$(grep -m 1 "${string}" ${DATAROOT}/allContacts.csv  | cut -d, -f1)
+    if [ -z "${name}" ]
+    then
+        echo "${string}"
+    else
+        echo $name
+    fi
+}
+
+cat $CHATFILE | head -400 > ${OUTFILE}
+IFS=$'\n'
+i=0
+for line in $(cat $CHATFILE )
+do
+speaker=$(echo $line | perl -n -e '/\[(\d{2}\/\d{2}\/\d{4},\s\d{1,2}\:\d{2}\:\d{2})\].*(\+.*?).:.*/ && print "$2\n"')
+if [ -z "${speaker}" ] 
+then
+echo $line
+else 
+speakername=$(/bin/grep -m 1 "${speaker:0:${#speaker}-2}" ${DATAROOT}/allContacts.csv  | cut -d, -f1)
+if [ -z "${speakername}" ]
+then
+echo $line
+else
+echo $line | sed -e "s/${speaker}/${speakername}/g"
+fi
+fi
+done
